@@ -15,8 +15,6 @@ public:
 	void setCenter(ZcGePoint3d);
 	void setWidth(double);
 	void setHeight(double);
-	void setRow(int);
-	void setColumn(int);
 	void setGrids(int, int, int);
 	void setChessIds(int,int,AcDbObjectId);
 	ZcGePoint3d getCenter();
@@ -42,7 +40,10 @@ protected:
 	};
 	enum PartialUndoCode {
 		kGrids = 101,
-		kChessIds = 102
+		kChessIds = 102,
+		kCenter=103,
+		kWidth=104,
+		kHeight=105,
 	};
 
 public:

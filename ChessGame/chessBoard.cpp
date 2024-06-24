@@ -53,19 +53,40 @@ void CchessBoard::initializeGrid(int r, int c)
 }
 
 void CchessBoard::setCenter(ZcGePoint3d pt) {
+	// 实现部分Undo
+	assertWriteEnabled(false);
+	AcDbDwgFiler *pFiler = NULL;
+	if ((pFiler = undoFiler()) != NULL) {
+		undoFiler()->writeAddress(CchessBoard::desc());//导出实体标记
+		undoFiler()->writeItem((Adesk::Int16)kCenter);//导出属性标记
+		undoFiler()->writePoint3d(center);
+	}
+
 	center = pt;
 }
 void CchessBoard::setWidth(double w) {
+	// 实现部分Undo
+	assertWriteEnabled(false);
+	AcDbDwgFiler *pFiler = NULL;
+	if ((pFiler = undoFiler()) != NULL) {
+		undoFiler()->writeAddress(CchessBoard::desc());//导出实体标记
+		undoFiler()->writeItem((Adesk::Int16)kWidth);//导出属性标记
+		undoFiler()->writeDouble(width);
+	}
+
 	width = w;
 }
 void CchessBoard::setHeight(double h) {
+	// 实现部分Undo
+	assertWriteEnabled(false);
+	AcDbDwgFiler *pFiler = NULL;
+	if ((pFiler = undoFiler()) != NULL) {
+		undoFiler()->writeAddress(CchessBoard::desc());//导出实体标记
+		undoFiler()->writeItem((Adesk::Int16)kHeight);//导出属性标记
+		undoFiler()->writeDouble(height);
+	}
+
 	height = h;
-}
-void CchessBoard::setRow(int r) {
-	row = r;
-}
-void CchessBoard::setColumn(int c) {
-	column = c;
 }
 void CchessBoard::setGrids(int x, int y, int status) {
 	// 边界检查
@@ -152,6 +173,15 @@ Acad::ErrorStatus CchessBoard::applyPartialUndo(AcDbDwgFiler* undoFiler, AcRxCla
 					chessIds[i][j] = value;
 				}
 			}
+			break;
+		case kCenter:
+			undoFiler->readPoint3d(&center);
+			break;
+		case kWidth:
+			undoFiler->readDouble(&width);
+			break;
+		case kHeight:
+			undoFiler->readDouble(&height);
 			break;
 		default:
 			assert(Adesk::kFalse);

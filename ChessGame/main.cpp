@@ -185,12 +185,64 @@ void addReactor(CchessBoard* pChessBoard, AcDbObjectId chessId) {
 
 	// 将反应器对象添加为ChessBoard的持久性反应器
 	es = pChessBoard->addPersistentReactor(reactId);
-	if (es == Acad::eOk) {
-		acutPrintf(_T("\n绑定成功"));
-	}
-	else {
+	if (es != Acad::eOk) {
 		acutPrintf(_T("\n绑定失败，错误为: %d"), es);
 	}
+}
+
+
+// 思路：x,y用于判断当前下在哪个位置，遍历这个点的四周判断是否有五子连在一起
+bool isWin(CchessBoard* pChessBoard, int color, int x, int y) {
+	// 获取棋盘内信息和当前棋子的颜色
+	std::vector<std::vector<int>> grids = pChessBoard->getGrids();
+	if (color == empty) {
+		return false;
+	}
+
+	// 在四个方向检查偏移量
+	std::vector<std::pair<int, int>> directions = {
+		{0, 1}, {1, 0}, {1, 1}, {1, -1}
+	};
+
+	// 获取行、列数
+	int row = grids.size();
+	int column = grids[0].size();
+
+	for (auto dir : directions) {
+		int count = 1; // 当前格子算一个
+		int dx = dir.first;
+		int dy = dir.second;
+
+		// 向一个方向检查
+		for (int step = 1; step < 5; ++step) {
+			int newX = x + step * dx;
+			int newY = y + step * dy;
+			if (newX >= 0 && newX <= row && newY >= 0 && newY <= column && grids[newX][newY] == color) {
+				count++;
+			}
+			else {
+				break;
+			}
+		}
+
+		// 向反方向检查
+		for (int step = 1; step < 5; ++step) {
+			int newX = x - step * dx;
+			int newY = y - step * dy;
+			if (newX >= 0 && newX <= row && newY >= 0 && newY <= column && grids[newX][newY] == color) {
+				count++;
+			}
+			else {
+				break;
+			}
+		}
+
+		if (count >= 5) {
+			return true;
+		}
+	}
+
+	return false;
 }
 
 
@@ -219,7 +271,8 @@ void playGame() {
 	double radius = min(cellWidth, cellHeight) / 2.5;
 	int chessColor = black;
 
-	for (int i = 0; i < 10; i++) {
+	// 开始游戏
+	for (int i = 0; i<256; i++) {
 		// 创建棋子
 		AcDbObjectId chessId = createChess(radius,chessColor);
 		if (chessId == nullptr) {
@@ -249,10 +302,18 @@ void playGame() {
 
 		// 将棋子添加到ChessBoard的反应器当中
 		addReactor(chessBoard, chessId);
-		chessColor = chessColor % 2 + 1;
+
+		// 判断当前是否胜利
+		if (isWin(chessBoard,chessColor, x, y)) {
+			acutPrintf(_T("玩家 %d 获胜\n"), chessColor);
+			break;
+		}
+
+		// 更新棋子颜色，继续循环
+		chessColor = chessColor % 2 + 1;			
 	}
 
 	// 关闭棋盘
 	chessBoard->close();
-
 }
+

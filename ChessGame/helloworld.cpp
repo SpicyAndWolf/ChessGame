@@ -2,7 +2,7 @@
 
 void helloworld()
 {
-	acutPrintf(_T("\nHello world!"));
+	acutPrintf(_T("\n欢迎使用五子棋，请输入指令PLAYGAME开始"));
 }
 
 

@@ -24,6 +24,7 @@ public:
 	int getRow();
 	int getColumn();
 	int getStatus(int, int);
+	std::vector<std::vector<int>> getGrids();
 
 protected:
 	static Adesk::UInt32 kCurrentVersionNumber;

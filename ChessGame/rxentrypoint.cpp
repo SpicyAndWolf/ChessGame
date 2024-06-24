@@ -20,6 +20,10 @@ void initapp()
 	// ×¢²á·´Ó¦Æ÷
 	CmyReactor::rxInit();
 
+	// »¶Ó­Óï¾ä
+	helloworld();
+	
+	// ×¢²áÖ¸Áî
 	acedRegCmds->addCommand(cmd_group_name, _T("helloworld"), _T("helloworld"), ACRX_CMD_MODAL, helloworld);
 	acedRegCmds->addCommand(cmd_group_name, _T("playGame"), _T("playGame"), ACRX_CMD_MODAL, playGame);
 }

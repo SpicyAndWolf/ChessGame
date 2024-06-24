@@ -79,6 +79,9 @@ int CchessBoard::getRow() {
 int CchessBoard::getStatus(int x, int y) {
 	return grids[x][y];
 }
+std::vector<std::vector<int>> CchessBoard::getGrids() {
+	return grids;
+}
 
 //----------------------------------------------------------------------------
 //----- AcDbObject protocols

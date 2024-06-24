@@ -302,6 +302,26 @@ bool isWin(CchessBoard* pChessBoard, int color, int x, int y) {
 	return false;
 }
 
+void printToScreen(const AcString& textString, AcGePoint3d position, double height = 20.0) {
+	AcDbText* pText = new AcDbText();
+	pText->setTextString(textString.kACharPtr());
+	pText->setPosition(position);
+	pText->setHeight(height);
+
+	// 获取块表记录（模型空间）
+	AcDbBlockTable* pBlockTable;
+	acdbHostApplicationServices()->workingDatabase()->getSymbolTable(pBlockTable, AcDb::kForRead);
+
+	AcDbBlockTableRecord* pBlockTableRecord;
+	pBlockTable->getAt(ACDB_MODEL_SPACE, pBlockTableRecord, AcDb::kForWrite);
+	pBlockTable->close();
+
+	// 将文本对象添加到模型空间
+	AcDbObjectId textId;
+	pBlockTableRecord->appendAcDbEntity(textId, pText);
+	pText->close();
+	pBlockTableRecord->close();
+}
 
 
 void playGame() {
@@ -346,11 +366,21 @@ void playGame() {
 		Cchess* chess = (Cchess*)chessEnt;
 
 		// 获取棋子中心点位置
-		AcGePoint3d center = chess->getCenter();
+		AcGePoint3d chessCenter = chess->getCenter();
 
-		// 找到离棋子最近的棋盘位置，更改其中心点
+		// 找到离棋子最近的棋盘位置
 		int x = 0, y = 0;
-		AcGePoint3d pt = findClosePoint(center, chessBoard, x, y);
+		AcGePoint3d pt = findClosePoint(chessCenter, chessBoard, x, y);
+
+		// 判断当前位置是否已存在棋子
+		if (chessBoard->getStatus(x, y) != empty) {
+			chess->erase();
+			chess->close();
+			--i;
+			continue;
+		}
+
+		// 更改其中心点，并更新棋盘数据
 		chess->setCenter(pt);
 		chessBoard->setGrids(x, y, chessColor);
 		chessBoard->setChessIds(x, y, chessId);
@@ -363,7 +393,14 @@ void playGame() {
 
 		// 判断当前是否胜利
 		if (isWin(chessBoard,chessColor, x, y)) {
-			acutPrintf(_T("玩家 %d 获胜\n"), chessColor);
+			// 设置胜利文字的位置、内容
+			AcGePoint3d textPoint = chessBoard->getCenter();
+			textPoint.y =textPoint.y+ height / 2 + 20;
+			AcString message;
+			message.format(L"玩家 %d 获胜\n", chessColor);
+
+			// 将胜利文字打到画布上
+			printToScreen(message, textPoint,20);
 			break;
 		}
 
@@ -374,4 +411,3 @@ void playGame() {
 	// 关闭棋盘
 	chessBoard->close();
 }
-

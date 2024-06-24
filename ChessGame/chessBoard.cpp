@@ -18,8 +18,8 @@ ACRX_DXF_DEFINE_MEMBERS(
 
 CchessBoard::CchessBoard() {
 	center = AcGePoint3d(0.0, 0.0, 0.0);
-	width = 40;
-	height = 40;
+	width = 100;
+	height = 100;
 	row = 15;
 	column = 15;
 

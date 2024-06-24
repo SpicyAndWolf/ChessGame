@@ -149,8 +149,10 @@ void addReactor(CchessBoard* pChessBoard, AcDbObjectId chessId) {
 	}
 	pNameList->close();
 
-	// 获取ChessBoard中心
+	// 获取ChessBoard中心、长宽，用于初始化反应器
 	AcGePoint3d chessBoardCenter = pChessBoard->getCenter();
+	double chessBoardWidth = pChessBoard->getWidth();
+	double chessBoardHeight = pChessBoard->getHeight();
 
 	// 创建反应器对象，并初始化
 	CmyReactor* pReactor = new CmyReactor();
@@ -160,6 +162,8 @@ void addReactor(CchessBoard* pChessBoard, AcDbObjectId chessId) {
 	}
 	pReactor->eLinkage(chessId);
 	pReactor->setChessBoardCenter(chessBoardCenter);
+	pReactor->setChessBoardWidth(chessBoardWidth);
+	pReactor->setChessBoardHeight(chessBoardHeight);
 
 	// 设置反应器在字典中的名称
 	AcString reactorName = _T("reactor_");

@@ -24,7 +24,12 @@ CmyReactor::~CmyReactor(){}
 void CmyReactor::setChessBoardCenter(AcGePoint3d newPt) {
 	chessBoardCenter_old = newPt;
 }
-
+void CmyReactor::setChessBoardWidth(double w) {
+	chessBoardWidth_old = w;
+}
+void CmyReactor::setChessBoardHeight(double h) {
+	chessBoardHeight_old = h;
+}
 
 //----------------------------------------------------------------------------
 //----- AcDbObject protocols
@@ -39,6 +44,8 @@ Acad::ErrorStatus CmyReactor::dwgOutFields (AcDbDwgFiler *pFiler) const {
 
 	//----- Output params
 	pFiler->writePoint3d(chessBoardCenter_old); // 棋盘中心点
+	pFiler->writeDouble(chessBoardWidth_old); // 棋盘宽度
+	pFiler->writeDouble(chessBoardHeight_old); // 棋盘高度
 	pFiler->writeUInt32(chesses.size()); // 棋子数量
 
 	// 棋子的ObjectId
@@ -62,6 +69,8 @@ Acad::ErrorStatus CmyReactor::dwgInFields(AcDbDwgFiler * pFiler) {
 
 	//----- Read params
 	pFiler->readPoint3d(&chessBoardCenter_old);
+	pFiler->readDouble(&chessBoardWidth_old); // 棋盘宽度
+	pFiler->readDouble(&chessBoardHeight_old); // 棋盘高度
 
 	// 读取棋子数量
 	Adesk::UInt32 numChesses;
@@ -118,24 +127,56 @@ void CmyReactor::modified(const AcDbObject* pDbObj) {
 		return;
 	}
 
-	// 获取棋盘当前位置，更新反应器内信息
+	// 获取棋盘当前位置、宽高，以及其行列数
 	AcGePoint3d currentCenter= pChessBoard->getCenter();
-	AcGePoint3d oldCenter = chessBoardCenter_old;
-	pChessBoard->setCenter(currentCenter);
+	double currentWidth = pChessBoard->getWidth();
+	double currentHeight = pChessBoard->getHeight();
+	double column = pChessBoard->getColumn();
+	double row = pChessBoard->getRow();
+
+	// 计算行高和列宽
+	double oldCellWidth = chessBoardWidth_old / column;
+	double oldCellHeight = chessBoardHeight_old / row;
+	double newCellWidth = currentWidth / column;
+	double newCellHeight = currentHeight / row;
+
+	// 计算棋盘缩放比例
+	double scaleX = newCellWidth / oldCellWidth;
+	double scaleY = newCellHeight / oldCellHeight;
 
 	// 计算平移向量，移动棋子
-	AcGeVector3d translation = currentCenter - oldCenter;
-	AcDbEntity* pChess = nullptr;
+	AcDbEntity* pChessEnt = nullptr;
 	for (int i = 0; i < chesses.size(); i++) {
-		if (acdbOpenObject(pChess, chesses[i], AcDb::kForWrite) == Acad::eOk) {
+		if (acdbOpenObject(pChessEnt, chesses[i], AcDb::kForWrite) == Acad::eOk) {
+			// 获取当前棋子的位置
+			Cchess* pChess = (Cchess*)pChessEnt; //毕竟C++是强类型语言，得强制类型转换一下
+			AcGePoint3d chessPos;
+			chessPos = pChess->getCenter();
+
+			// 计算相对于旧中心点的位置
+			AcGeVector3d relativePos = chessPos - chessBoardCenter_old;
+
+			// 按缩放比例调整相对位置
+			relativePos.set(relativePos.x * scaleX, relativePos.y * scaleY, relativePos.z);
+
+			// 计算新的棋子位置
+			AcGePoint3d newChessPos = currentCenter + relativePos;
+
+			// 移动棋子到新位置
+			AcGeVector3d translation = newChessPos - chessPos;
 			pChess->transformBy(AcGeMatrix3d::translation(translation));
+			pChess->setRadius(min(newCellHeight,newCellWidth)/2.5);
 			pChess->close();
 		}
 		else {
 			acutPrintf(_T("\n错误：无法打开对应的棋子"));
 		}
 	}
+
+	// 更新反应器内记录
 	chessBoardCenter_old = currentCenter;
+	chessBoardWidth_old = currentWidth;
+	chessBoardHeight_old = currentHeight;
 }
 
 void CmyReactor::modifiedGraphics(const AcDbEntity* pDbEnt) {

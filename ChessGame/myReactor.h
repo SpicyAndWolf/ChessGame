@@ -13,12 +13,16 @@ protected:
 	static Adesk::UInt32 kCurrentVersionNumber;
 	std::vector<AcDbObjectId> chesses; // 关联的棋子
 	AcGePoint3d chessBoardCenter_old; // 移动前棋盘的位置
+	double chessBoardWidth_old; // 移动前棋盘的宽度
+	double chessBoardHeight_old; // 移动前棋盘的高度
 
 public:
 	CmyReactor();
 	virtual ~CmyReactor();
 	void eLinkage(AcDbObjectId i) { chesses.push_back(i);};
 	void setChessBoardCenter(AcGePoint3d);
+	void setChessBoardWidth(double);
+	void setChessBoardHeight(double);
 
 	//----- AcDbObject protocols
 	//---- Dwg Filing protocol

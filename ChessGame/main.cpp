@@ -195,7 +195,7 @@ void addReactor(CchessBoard* pChessBoard, AcDbObjectId chessId) {
 void changeColor(CchessBoard* pChessBoard, int x, int y, int dx, int dy, int positiveStep,int negativeStep) {
 	// 向该维度的正方向遍历
 	std::vector<std::vector<AcDbObjectId>> chessIds = pChessBoard->getChessIds();
-	for (int step = 1; step <= positiveStep; ++step) {
+	for (int step = 0; step <= positiveStep; ++step) {
 		// 获取棋子Id
 		int newX = x + step * dx;
 		int newY = y + step * dy;

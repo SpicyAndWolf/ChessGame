@@ -209,7 +209,7 @@ void changeColor(CchessBoard* pChessBoard, int x, int y, int dx, int dy, int pos
 		}
 		Cchess* chess = (Cchess*)chessEnt;
 
-		// 修改棋子半径
+		// 修改棋子颜色
 		chess->setColor(success);
 		chess->recordGraphicsModified();
 		chess->close();
@@ -229,7 +229,7 @@ void changeColor(CchessBoard* pChessBoard, int x, int y, int dx, int dy, int pos
 		}
 		Cchess* chess = (Cchess*)chessEnt;
 
-		// 修改棋子半径
+		// 修改棋子颜色
 		chess->setColor(success);
 		chess->recordGraphicsModified();
 		chess->close();

@@ -40,10 +40,15 @@ protected:
 		white = 1,
 		black = 2
 	};
+	enum PartialUndoCode {
+		kGrids = 101,
+		kChessIds = 102
+	};
 
 public:
 	CchessBoard();
 	virtual ~CchessBoard();
+	Acad::ErrorStatus applyPartialUndo(AcDbDwgFiler* undoFiler, AcRxClass* classObj);
 
 	//---- Dwg Filing protocol
 	virtual Acad::ErrorStatus dwgOutFields(AcDbDwgFiler *pFiler) const;

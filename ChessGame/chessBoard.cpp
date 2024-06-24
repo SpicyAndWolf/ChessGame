@@ -68,11 +68,98 @@ void CchessBoard::setColumn(int c) {
 	column = c;
 }
 void CchessBoard::setGrids(int x, int y, int status) {
+	// 边界检查
+	if (x < 0 || x > row || y < 0 || y > column) {
+		acutPrintf(_T("\n无效的棋子位置"));
+		return; 
+	}
+
+	// 实现部分Undo
+	assertWriteEnabled(false);
+	AcDbDwgFiler *pFiler = NULL;
+	if ((pFiler = undoFiler()) != NULL) {
+		undoFiler()->writeAddress(CchessBoard::desc());//导出实体标记
+		undoFiler()->writeItem((Adesk::Int16)kGrids);//导出属性标记
+
+		// 导出数组内容
+		undoFiler()->writeInt32(row);
+		undoFiler()->writeInt32(column);
+		for (int i = 0; i <= row; i++) {
+			for (int j = 0; j <= column; j++) {
+				undoFiler()->writeInt32(grids[x][y]);
+			}
+		}
+	}
+
+	// 修改数据值
 	grids[x][y] = status;
 }
+
 void CchessBoard::setChessIds(int x,int y, AcDbObjectId id) {
+	// 边界检查
+	if (x < 0 || x > row || y < 0 || y > column) {
+		acutPrintf(_T("\n无效的棋子位置"));
+		return;
+	}
+
+	// 实现部分Undo
+	assertWriteEnabled(false);
+	AcDbDwgFiler *pFiler = NULL;
+	if ((pFiler = undoFiler()) != NULL) {
+		undoFiler()->writeAddress(CchessBoard::desc());//导出实体标记
+		undoFiler()->writeItem((Adesk::Int16)kChessIds);//导出属性标记
+
+		// 导出数组内容
+		undoFiler()->writeInt32(row);
+		undoFiler()->writeInt32(column);
+		for (int i = 0; i <= row; i++) {
+			for (int j = 0; j <= column; j++) {
+				undoFiler()->writeItem((AcDbSoftPointerId&)chessIds[x][y]);
+			}
+		}
+	}
+
+	// 修改数据值
 	chessIds[x][y] = id;
 }
+
+Acad::ErrorStatus CchessBoard::applyPartialUndo(AcDbDwgFiler* undoFiler, AcRxClass* classObj)
+{
+	if (classObj != CchessBoard::desc())
+		return AcDbEntity::applyPartialUndo(undoFiler, classObj);
+	Adesk::Int16 shortCode;
+	undoFiler->readItem(&shortCode);
+	PartialUndoCode code = (PartialUndoCode)shortCode;
+	int num;
+	switch (code) {
+		case kGrids:
+			undoFiler->readInt32(&row);
+			undoFiler->readInt32(&column);
+			for (int i = 0; i < row; i++) {
+				for (int j = 0; j < column; j++) {
+					undoFiler->readInt32(&num);
+					grids[i][j] = num;
+				}
+			}
+			break;
+		case kChessIds:
+			undoFiler->readInt32(&row);
+			undoFiler->readInt32(&column);
+			for (int i = 0; i < row; i++) {
+				for (int j = 0; j < column; j++) {
+					AcDbObjectId value;
+					undoFiler->readItem((AcDbSoftPointerId*)&value);
+					chessIds[i][j] = value;
+				}
+			}
+			break;
+		default:
+			assert(Adesk::kFalse);
+			break;
+	}
+	return Acad::eOk;
+}
+
 
 
 ZcGePoint3d CchessBoard::getCenter() {

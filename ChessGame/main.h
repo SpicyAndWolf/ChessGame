@@ -15,8 +15,7 @@ AcGePoint3d findClosePoint(AcGePoint3d , CchessBoard* ,int&, int&); // ÕÒµ½Óëµ±Ç
 void addReactor(CchessBoard* , AcDbObjectId ); // ¸øÆåÅÌµÄ·´Ó¦Æ÷ÖĞÌí¼ÓÒ»¸öÆå×Ó
 void changeColor(CchessBoard* pChessBoard, int, int, int, int, int, int);// »ñÊ¤Ê±ĞŞ¸ÄÑÕÉ«
 bool isWin(CchessBoard* , int , int , int ); //ÅĞ¶ÏÊÇ·ñÊ¤Àû
-
-void printToScreen(const AcString&, AcGePoint3d);
+void printToScreen(const AcString&, AcGePoint3d); // ÔÚ»­²¼ÉÏ´òÓ¡ÎÄ×Ö
 
 // Ö÷º¯Êı
 void playGame();

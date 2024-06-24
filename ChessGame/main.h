@@ -13,6 +13,7 @@ AcDbObjectId createChessBoard();
 AcDbObjectId createChess(double,int);
 AcGePoint3d findClosePoint(AcGePoint3d , CchessBoard* ,int&, int&);
 void addReactor(CchessBoard* , AcDbObjectId );
+void changeColor(CchessBoard* pChessBoard, int, int, int, int, int, int);
 bool isWin(CchessBoard* , int , int , int );
 
 // Ö÷º¯Êý

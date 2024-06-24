@@ -31,6 +31,15 @@ CchessBoard::CchessBoard() {
 	for (int i = 0; i <= row; i++) {
 		grids.push_back(arr);
 	}
+
+	// 设置chessIds
+	std::vector<AcDbObjectId> arrId;
+	for (int i = 0; i <= column; i++) {
+		arrId.push_back(0);
+	}
+	for (int i = 0; i <= row; i++) {
+		chessIds.push_back(arrId);
+	}
 }
 
 CchessBoard::~CchessBoard() {}
@@ -39,7 +48,8 @@ void CchessBoard::initializeGrid(int r, int c)
 {
 	row = r;
 	column = c;
-	grids.resize(row, std::vector<int>(column, 0)); // 初始化所有格子为0
+	grids.resize((row+1), std::vector<int>((column+1), 0)); // 初始化所有格子为0
+	chessIds.resize((row + 1), std::vector<AcDbObjectId>((column + 1), 0)); // 初始化所有格子为0
 }
 
 void CchessBoard::setCenter(ZcGePoint3d pt) {
@@ -59,6 +69,9 @@ void CchessBoard::setColumn(int c) {
 }
 void CchessBoard::setGrids(int x, int y, int status) {
 	grids[x][y] = status;
+}
+void CchessBoard::setChessIds(int x,int y, AcDbObjectId id) {
+	chessIds[x][y] = id;
 }
 
 
@@ -83,6 +96,10 @@ std::vector<std::vector<int>> CchessBoard::getGrids() {
 	return grids;
 }
 
+std::vector<std::vector<AcDbObjectId>> CchessBoard::getChessIds() {
+	return chessIds;
+}
+
 //----------------------------------------------------------------------------
 //----- AcDbObject protocols
 //---- Dwg Filing protocol
@@ -101,10 +118,17 @@ Acad::ErrorStatus CchessBoard::dwgOutFields(AcDbDwgFiler *pFiler) const {
 	pFiler->writeInt32(row);
 	pFiler->writeInt32(column);
 
-	// Output grid values
-	for (int i = 0; i < row; ++i) {
-		for (int j = 0; j < column; ++j) {
+	// 输出 grids 值
+	for (int i = 0; i <= row; ++i) {
+		for (int j = 0; j <= column; ++j) {
 			pFiler->writeInt32(grids[i][j]);
+		}
+	}
+
+	// 输出chessIds值
+	for (int i = 0; i <= row; ++i) {
+		for (int j = 0; j <= column; ++j) {
+			pFiler->writeItem((AcDbSoftPointerId&)chessIds[i][j]);
 		}
 	}
 
@@ -127,20 +151,29 @@ Acad::ErrorStatus CchessBoard::dwgInFields(AcDbDwgFiler * pFiler) {
 	pFiler->readDouble(&height);
 	pFiler->readDouble(&width);
 
-	// Read grid dimensions
+	// 读取row和column
 	int r = 0, c = 0;
 	pFiler->readInt32(&r);
 	pFiler->readInt32(&c);
 
-	// Initialize grid with the read dimensions
+	// 初始化row、column，清0 grids和chessIds
 	initializeGrid(r, c);
 
-	// Read grid values
-	for (int i = 0; i < row; ++i) {
-		for (int j = 0; j < column; ++j) {
+	// 读grids值
+	for (int i = 0; i <= row; ++i) {
+		for (int j = 0; j <= column; ++j) {
 			int value = 0;
 			pFiler->readInt32(&value);
 			grids[i][j] = value;
+		}
+	}
+
+	// 读chessIds
+	for (int i = 0; i <= row; ++i) {
+		for (int j = 0; j <= column; ++j) {
+			AcDbObjectId value;
+			pFiler->readItem((AcDbSoftPointerId*)&value);
+			chessIds[i][j] = value;
 		}
 	}
 

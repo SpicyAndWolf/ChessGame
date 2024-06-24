@@ -18,6 +18,7 @@ public:
 	void setRow(int);
 	void setColumn(int);
 	void setGrids(int, int, int);
+	void setChessIds(int,int,AcDbObjectId);
 	ZcGePoint3d getCenter();
 	double getWidth();
 	double getHeight();
@@ -25,13 +26,15 @@ public:
 	int getColumn();
 	int getStatus(int, int);
 	std::vector<std::vector<int>> getGrids();
+	std::vector<std::vector<AcDbObjectId>> getChessIds();
 
 protected:
 	static Adesk::UInt32 kCurrentVersionNumber;
 	double width, height; // 棋盘长宽
 	ZcGePoint3d center; //棋盘中心点
 	int row, column; // 棋盘行列数
-	std::vector<std::vector<int>> grids; // 棋盘格子数组
+	std::vector<std::vector<int>> grids; // 棋盘格子数组,记录该格子的棋子颜色
+	std::vector<std::vector<AcDbObjectId>> chessIds; // 记录棋盘Id，当前用于实现获胜时棋子变色。
 	enum gridStatus {
 		empty = 0,
 		white = 1,

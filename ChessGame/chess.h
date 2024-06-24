@@ -21,7 +21,8 @@ protected:
 	enum chessColor {
 		empty = 0,
 		white = 1,
-		black = 2
+		black = 2,
+		success = 3
 	};
 
 public:

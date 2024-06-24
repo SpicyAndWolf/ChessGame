@@ -105,6 +105,8 @@ Adesk::Boolean Cchess::subWorldDraw(AcGiWorldDraw * mode) {
 		colorEntity.setRGB(21,255,255);
 	else if (color == white) 
 		colorEntity.setRGB(255, 255, 255);
+	else if(color == success)
+		colorEntity.setRGB(0, 255, 0);
 	traits.setTrueColor(colorEntity);
 
 	// »­Ô²

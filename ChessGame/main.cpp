@@ -7,7 +7,8 @@
 enum chessStatus {
 	empty = 0,
 	white = 1,
-	black = 2
+	black = 2,
+	success = 3
 };
 
 void getBlockTableRecord(AcDbBlockTableRecord *& pBlockTableRecord) {
@@ -191,6 +192,51 @@ void addReactor(CchessBoard* pChessBoard, AcDbObjectId chessId) {
 }
 
 
+void changeColor(CchessBoard* pChessBoard, int x, int y, int dx, int dy, int positiveStep,int negativeStep) {
+	// 向该维度的正方向遍历
+	std::vector<std::vector<AcDbObjectId>> chessIds = pChessBoard->getChessIds();
+	for (int step = 1; step <= positiveStep; ++step) {
+		// 获取棋子Id
+		int newX = x + step * dx;
+		int newY = y + step * dy;
+		AcDbObjectId chessId = chessIds[newX][newY];
+
+		// 通过Id重新打开这个棋子
+		AcDbEntity* chessEnt;
+		if (acdbOpenAcDbEntity(chessEnt, chessId, AcDb::kForWrite) != Acad::eOk) {
+			acutPrintf(_T("Failed to open entity with Object ID: %ld\n"), chessId.asOldId());
+			return;
+		}
+		Cchess* chess = (Cchess*)chessEnt;
+
+		// 修改棋子半径
+		chess->setColor(success);
+		chess->recordGraphicsModified();
+		chess->close();
+	}
+
+	// 向反方向遍历
+	for (int step = 1; step <= negativeStep; ++step) {
+		int newX = x - step * dx;
+		int newY = y - step * dy;
+		AcDbObjectId chessId = chessIds[newX][newY];
+
+		// 通过Id重新打开这个棋子
+		AcDbEntity* chessEnt;
+		if (acdbOpenAcDbEntity(chessEnt, chessId, AcDb::kForWrite) != Acad::eOk) {
+			acutPrintf(_T("Failed to open entity with Object ID: %ld\n"), chessId.asOldId());
+			return;
+		}
+		Cchess* chess = (Cchess*)chessEnt;
+
+		// 修改棋子半径
+		chess->setColor(success);
+		chess->recordGraphicsModified();
+		chess->close();
+	}
+	acedUpdateDisplay();
+}
+
 // 思路：x,y用于判断当前下在哪个位置，遍历这个点的四周判断是否有五子连在一起
 bool isWin(CchessBoard* pChessBoard, int color, int x, int y) {
 	// 获取棋盘内信息和当前棋子的颜色
@@ -208,16 +254,24 @@ bool isWin(CchessBoard* pChessBoard, int color, int x, int y) {
 	int row = grids.size();
 	int column = grids[0].size();
 
+	// 开始检查
 	for (auto dir : directions) {
-		int count = 1; // 当前格子算一个
+		int count = 1;
+
+		// 每次走的步幅
 		int dx = dir.first;
 		int dy = dir.second;
 
-		// 向一个方向检查
+		// 在正负方向走的步数，用于实现动画效果的函数，可以简化传参量
+		int positiveStep = 0;
+		int negativeStep = 0;
+
+		// 向该维度的正方向检查
 		for (int step = 1; step < 5; ++step) {
 			int newX = x + step * dx;
 			int newY = y + step * dy;
-			if (newX >= 0 && newX <= row && newY >= 0 && newY <= column && grids[newX][newY] == color) {
+			if (newX >= 0 && newX < row && newY >= 0 && newY < column && grids[newX][newY] == color) {
+				positiveStep++;
 				count++;
 			}
 			else {
@@ -229,7 +283,8 @@ bool isWin(CchessBoard* pChessBoard, int color, int x, int y) {
 		for (int step = 1; step < 5; ++step) {
 			int newX = x - step * dx;
 			int newY = y - step * dy;
-			if (newX >= 0 && newX <= row && newY >= 0 && newY <= column && grids[newX][newY] == color) {
+			if (newX >= 0 && newX < row && newY >= 0 && newY < column && grids[newX][newY] == color) {
+				negativeStep++;
 				count++;
 			}
 			else {
@@ -238,6 +293,8 @@ bool isWin(CchessBoard* pChessBoard, int color, int x, int y) {
 		}
 
 		if (count >= 5) {
+			// 实现动画效果
+			changeColor(pChessBoard, x, y, dx, dy, positiveStep, negativeStep);
 			return true;
 		}
 	}
@@ -296,6 +353,7 @@ void playGame() {
 		AcGePoint3d pt = findClosePoint(center, chessBoard, x, y);
 		chess->setCenter(pt);
 		chessBoard->setGrids(x, y, chessColor);
+		chessBoard->setChessIds(x, y, chessId);
 
 		// 关闭棋子
 		chess->close();

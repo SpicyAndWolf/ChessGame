@@ -5,6 +5,7 @@
 #include "chessJig.h"
 #include "aced.h"
 #include "myReactor.h"
+#include "chessBoardJig.h"
 
 
 void getBlockTableRecord(AcDbBlockTableRecord *&);

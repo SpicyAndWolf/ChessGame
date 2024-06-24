@@ -195,6 +195,7 @@
   <ItemGroup>
     <ClCompile Include="chess.cpp" />
     <ClCompile Include="chessBoard.cpp" />
+    <ClCompile Include="chessBoardJig.cpp" />
     <ClCompile Include="chessJig.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="myReactor.cpp" />
@@ -215,6 +216,7 @@
   <ItemGroup>
     <ClInclude Include="chess.h" />
     <ClInclude Include="chessBoard.h" />
+    <ClInclude Include="chessBoardJig.h" />
     <ClInclude Include="chessJig.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="main.h" />

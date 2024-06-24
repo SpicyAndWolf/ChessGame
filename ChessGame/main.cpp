@@ -3,6 +3,7 @@
 #include "main.h"
 #include <cmath>
 
+
 enum chessStatus {
 	empty = 0,
 	white = 1,
@@ -22,30 +23,23 @@ AcDbObjectId createChessBoard() {
 	AcDbBlockTableRecord *pBlockTableRecord;
 	getBlockTableRecord(pBlockTableRecord);
 
-	// 创建棋盘对象
+	// 创建棋盘对象，并链接Jig
 	CchessBoard *pNewEntity = new CchessBoard();
 	pNewEntity->setDatabaseDefaults();
+	CchessBoardJig chessBoardJig=CchessBoardJig();
 
-	// 输入中心、长宽
-	ads_point pt;
-	double width, height;
-	acedGetPoint(NULL, _T("\n输入中心："), pt);
-	acedGetReal(_T("\n输入宽度："), &width);
-	acedGetReal(_T("\n输入高度："), &height);
-
-	// 设置对象属性
-	AcGePoint3d center = AcGePoint3d(pt[0], pt[1], pt[2]);
-	pNewEntity->setCenter(center);
-	pNewEntity->setWidth(width);
-	pNewEntity->setHeight(height);
-
-	// 加入棋盘到模型空间
-	AcDbObjectId objId;
-	pBlockTableRecord->appendAcDbEntity(objId,pNewEntity);
-	pBlockTableRecord->close();
-	pNewEntity->close();
-	
-	return objId;
+	// 将其放入块表
+	if (chessBoardJig.startJig(pNewEntity) == AcEdJig::kNormal) {
+		AcDbObjectId id;
+		pBlockTableRecord->appendAcDbEntity(id, pNewEntity);
+		pNewEntity->close();
+		pBlockTableRecord->close();
+		return id;
+	}
+	else {
+		delete pNewEntity;
+		return nullptr;
+	}
 }
 
 AcDbObjectId createChess(double r,int color) {

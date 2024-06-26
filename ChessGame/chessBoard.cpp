@@ -53,67 +53,28 @@ void CchessBoard::initializeGrid(int r, int c)
 }
 
 void CchessBoard::setCenter(ZcGePoint3d pt) {
-	// 实现部分Undo
-	assertWriteEnabled(false);
-	AcDbDwgFiler *pFiler = NULL;
-	if ((pFiler = undoFiler()) != NULL) {
-		undoFiler()->writeAddress(CchessBoard::desc());//导出实体标记
-		undoFiler()->writeItem((Adesk::Int16)kCenter);//导出属性标记
-		undoFiler()->writePoint3d(center);
-	}
-
 	center = pt;
 }
 void CchessBoard::setWidth(double w) {
-	// 实现部分Undo
-	assertWriteEnabled(false);
-	AcDbDwgFiler *pFiler = NULL;
-	if ((pFiler = undoFiler()) != NULL) {
-		undoFiler()->writeAddress(CchessBoard::desc());//导出实体标记
-		undoFiler()->writeItem((Adesk::Int16)kWidth);//导出属性标记
-		undoFiler()->writeDouble(width);
-	}
-
 	width = w;
 }
 void CchessBoard::setHeight(double h) {
-	// 实现部分Undo
-	assertWriteEnabled(false);
-	AcDbDwgFiler *pFiler = NULL;
-	if ((pFiler = undoFiler()) != NULL) {
-		undoFiler()->writeAddress(CchessBoard::desc());//导出实体标记
-		undoFiler()->writeItem((Adesk::Int16)kHeight);//导出属性标记
-		undoFiler()->writeDouble(height);
-	}
-
 	height = h;
 }
-void CchessBoard::setGrids(int x, int y, int status) {
+void CchessBoard::setGrids(int x, int y, int color) {
 	// 边界检查
 	if (x < 0 || x > row || y < 0 || y > column) {
 		acutPrintf(_T("\n无效的棋子位置"));
 		return; 
 	}
 
-	// 实现部分Undo
-	assertWriteEnabled(false);
-	AcDbDwgFiler *pFiler = NULL;
-	if ((pFiler = undoFiler()) != NULL) {
-		undoFiler()->writeAddress(CchessBoard::desc());//导出实体标记
-		undoFiler()->writeItem((Adesk::Int16)kGrids);//导出属性标记
-
-		// 导出数组内容
-		undoFiler()->writeInt32(row);
-		undoFiler()->writeInt32(column);
-		for (int i = 0; i <= row; i++) {
-			for (int j = 0; j <= column; j++) {
-				undoFiler()->writeInt32(grids[x][y]);
-			}
-		}
-	}
-
 	// 修改数据值
-	grids[x][y] = status;
+	++stepCountA;
+	grids[x][y] = color;
+
+	// 保存当前状态,用于悔棋
+	if (stepCountA != stepCountB)
+		saveState();
 }
 
 void CchessBoard::setChessIds(int x,int y, AcDbObjectId id) {
@@ -123,73 +84,44 @@ void CchessBoard::setChessIds(int x,int y, AcDbObjectId id) {
 		return;
 	}
 
-	// 实现部分Undo
-	assertWriteEnabled(false);
-	AcDbDwgFiler *pFiler = NULL;
-	if ((pFiler = undoFiler()) != NULL) {
-		undoFiler()->writeAddress(CchessBoard::desc());//导出实体标记
-		undoFiler()->writeItem((Adesk::Int16)kChessIds);//导出属性标记
-
-		// 导出数组内容
-		undoFiler()->writeInt32(row);
-		undoFiler()->writeInt32(column);
-		for (int i = 0; i <= row; i++) {
-			for (int j = 0; j <= column; j++) {
-				undoFiler()->writeItem((AcDbSoftPointerId&)chessIds[x][y]);
-			}
-		}
-	}
-
 	// 修改数据值
 	chessIds[x][y] = id;
+	++stepCountB;
+	currentChessId = id;
+
+	// 保存当前状态,用于悔棋
+	if (stepCountA != stepCountB)
+		saveState();
 }
 
-Acad::ErrorStatus CchessBoard::applyPartialUndo(AcDbDwgFiler* undoFiler, AcRxClass* classObj)
-{
-	if (classObj != CchessBoard::desc())
-		return AcDbEntity::applyPartialUndo(undoFiler, classObj);
-	Adesk::Int16 shortCode;
-	undoFiler->readItem(&shortCode);
-	PartialUndoCode code = (PartialUndoCode)shortCode;
-	int num;
-	switch (code) {
-		case kGrids:
-			undoFiler->readInt32(&row);
-			undoFiler->readInt32(&column);
-			for (int i = 0; i < row; i++) {
-				for (int j = 0; j < column; j++) {
-					undoFiler->readInt32(&num);
-					grids[i][j] = num;
-				}
-			}
-			break;
-		case kChessIds:
-			undoFiler->readInt32(&row);
-			undoFiler->readInt32(&column);
-			for (int i = 0; i < row; i++) {
-				for (int j = 0; j < column; j++) {
-					AcDbObjectId value;
-					undoFiler->readItem((AcDbSoftPointerId*)&value);
-					chessIds[i][j] = value;
-				}
-			}
-			break;
-		case kCenter:
-			undoFiler->readPoint3d(&center);
-			break;
-		case kWidth:
-			undoFiler->readDouble(&width);
-			break;
-		case kHeight:
-			undoFiler->readDouble(&height);
-			break;
-		default:
-			assert(Adesk::kFalse);
-			break;
+void CchessBoard::saveState() {
+	// 创建当前棋盘状态的副本
+	ChessBoardState state;
+	state.grids = grids;
+	state.chessIds = chessIds;
+	state.chessId = currentChessId;
+
+	// 将副本保存到历史记录中
+	history.push(state);
+}
+
+void CchessBoard::regretChess() {
+	// 检查是否有历史记录
+	if (history.empty()) {
+		acutPrintf(_T("\n无法执行悔棋操作，没有历史记录。"));
+		return;
 	}
-	return Acad::eOk;
-}
 
+	// 移除栈顶元素
+	history.pop();
+	stepCountA = stepCountB;
+
+	// 恢复到上一个状态
+	ChessBoardState state = history.top();
+	grids = state.grids;
+	chessIds = state.chessIds;
+	currentChessId = state.chessId;
+}
 
 
 ZcGePoint3d CchessBoard::getCenter() {
@@ -212,10 +144,13 @@ int CchessBoard::getStatus(int x, int y) {
 std::vector<std::vector<int>> CchessBoard::getGrids() {
 	return grids;
 }
-
 std::vector<std::vector<AcDbObjectId>> CchessBoard::getChessIds() {
 	return chessIds;
 }
+AcDbObjectId CchessBoard::getCurrentChessId() {
+	return currentChessId;
+}
+
 
 //----------------------------------------------------------------------------
 //----- AcDbObject protocols

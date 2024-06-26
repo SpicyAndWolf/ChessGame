@@ -5,6 +5,13 @@
 #include "dbproxy.h"
 #include <vector>
 #include "chess.h"
+#include <stack>
+
+struct ChessBoardState {
+	std::vector<std::vector<int>> grids;
+	std::vector<std::vector<AcDbObjectId>> chessIds;
+	AcDbObjectId chessId;
+};
 
 class CchessBoard : public AcDbEntity
 {
@@ -25,6 +32,9 @@ public:
 	int getStatus(int, int);
 	std::vector<std::vector<int>> getGrids();
 	std::vector<std::vector<AcDbObjectId>> getChessIds();
+	AcDbObjectId getCurrentChessId();
+	void saveState();
+	void regretChess();
 
 protected:
 	static Adesk::UInt32 kCurrentVersionNumber;
@@ -33,6 +43,10 @@ protected:
 	int row, column; // 棋盘行列数
 	std::vector<std::vector<int>> grids; // 棋盘格子数组,记录该格子的棋子颜色
 	std::vector<std::vector<AcDbObjectId>> chessIds; // 记录棋盘Id，当前用于实现获胜时棋子变色。
+	std::stack<ChessBoardState> history;
+	int stepCountA = 0; // 这两个变量服务于悔棋功能，如果两者相等，则说明可以把当前状态压栈
+	int stepCountB = 0;
+	AcDbObjectId currentChessId; // 记录刚放下的棋子Id，也用于悔棋
 	enum gridStatus {
 		empty = 0,
 		white = 1,
@@ -49,7 +63,6 @@ protected:
 public:
 	CchessBoard();
 	virtual ~CchessBoard();
-	Acad::ErrorStatus applyPartialUndo(AcDbDwgFiler* undoFiler, AcRxClass* classObj);
 
 	//---- Dwg Filing protocol
 	virtual Acad::ErrorStatus dwgOutFields(AcDbDwgFiler *pFiler) const;

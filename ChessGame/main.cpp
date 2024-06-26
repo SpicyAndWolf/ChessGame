@@ -19,6 +19,78 @@ void getBlockTableRecord(AcDbBlockTableRecord *& pBlockTableRecord) {
 	pBlockTable->close();
 }
 
+bool isPointInRectangle(const AcGePoint3d& clickPoint, const AcDbPolyline* pRectangle) {
+	if (pRectangle->numVerts() != 4) {
+		acutPrintf(_T("\n错误：该多段线不是一个矩形"));
+		return false;
+	}
+
+	// 获取矩形的四个顶点
+	AcGePoint3d vertices[4];
+	for (int i = 0; i < 4; ++i) {
+		AcGePoint2d vertex2d;
+		pRectangle->getPointAt(i, vertex2d);
+		vertices[i] = AcGePoint3d(vertex2d.x, vertex2d.y, 0.0); // 将2D点转换为3D点
+	}
+
+	// 定义向量
+	AcGeVector3d v1 = vertices[1] - vertices[0];
+	AcGeVector3d v2 = vertices[2] - vertices[1];
+	AcGeVector3d v3 = vertices[3] - vertices[2];
+	AcGeVector3d v4 = vertices[0] - vertices[3];
+
+	// 点到顶点的向量
+	AcGeVector3d vp1 = clickPoint - vertices[0];
+	AcGeVector3d vp2 = clickPoint - vertices[1];
+	AcGeVector3d vp3 = clickPoint - vertices[2];
+	AcGeVector3d vp4 = clickPoint - vertices[3];
+
+	// 计算叉积
+	double c1 = v1.crossProduct(vp1).z;
+	double c2 = v2.crossProduct(vp2).z;
+	double c3 = v3.crossProduct(vp3).z;
+	double c4 = v4.crossProduct(vp4).z;
+
+	// 判断点是否在矩形内部
+	if ((c1 >= 0 && c2 >= 0 && c3 >= 0 && c4 >= 0) || (c1 <= 0 && c2 <= 0 && c3 <= 0 && c4 <= 0))
+		return true;
+	else
+		return false;
+}
+
+
+
+void createRegretButton(CchessBoard* pNewEntity, AcDbBlockTableRecord* pBlockTableRecord) {
+	// 计算矩形的位置
+	AcGePoint3d chessBoardCenter = pNewEntity->getCenter();
+	double chessBoardWidth = pNewEntity->getWidth();
+	double chessBoardHeight = pNewEntity->getHeight();
+
+	double rectWidth = chessBoardWidth / 5.0;
+	double rectHeight = chessBoardHeight / 6.0;
+	double offsetX = chessBoardWidth / 4.0;
+	double rectLeftX = chessBoardCenter.x + chessBoardWidth / 2.0 + offsetX;
+	double rectBottomY = chessBoardCenter.y - rectHeight / 2.0;
+
+	// 创建矩形对象
+	AcDbPolyline *pRectangle = new AcDbPolyline(4);
+	pRectangle->setDatabaseDefaults();
+
+	// 添加矩形的四个顶点
+	pRectangle->addVertexAt(0, AcGePoint2d(rectLeftX, rectBottomY));
+	pRectangle->addVertexAt(1, AcGePoint2d(rectLeftX + rectWidth, rectBottomY));
+	pRectangle->addVertexAt(2, AcGePoint2d(rectLeftX + rectWidth, rectBottomY + rectHeight));
+	pRectangle->addVertexAt(3, AcGePoint2d(rectLeftX, rectBottomY + rectHeight));
+	pRectangle->setClosed(true);
+
+	// 将矩形放入块表
+	AcDbObjectId rectId;
+	pBlockTableRecord->appendAcDbEntity(rectId, pRectangle);
+
+	// 关闭矩形
+	pRectangle->close();
+}
+
 AcDbObjectId createChessBoard() {
 	// 获取块表记录（模型空间）
 	AcDbBlockTableRecord *pBlockTableRecord;
@@ -33,6 +105,11 @@ AcDbObjectId createChessBoard() {
 	if (chessBoardJig.startJig(pNewEntity) == AcEdJig::kNormal) {
 		AcDbObjectId id;
 		pBlockTableRecord->appendAcDbEntity(id, pNewEntity);
+
+		// 创建悔棋按钮
+		createRegretButton(pNewEntity, pBlockTableRecord);
+
+		// 关闭对象
 		pNewEntity->close();
 		pBlockTableRecord->close();
 		return id;
@@ -191,6 +268,75 @@ void addReactor(CchessBoard* pChessBoard, AcDbObjectId chessId) {
 	}
 }
 
+void removeReactor(CchessBoard* pChessBoard, AcDbObjectId chessId) {
+	AcDbDatabase* pDb = acdbHostApplicationServices()->workingDatabase();
+	AcDbDictionary* pNameList = nullptr;
+
+	// 获取全局字典
+	Acad::ErrorStatus es = pDb->getNamedObjectsDictionary(pNameList, AcDb::kForWrite);
+	if (es != Acad::eOk) {
+		acutPrintf(_T("\n无法获取全局字典"));
+		return;
+	}
+
+	// 获取自定义字典
+	AcDbDictionary* pReactDict = nullptr;
+	es = pNameList->getAt(_T("ReactorDictionary"), (AcDbObject*&)pReactDict, AcDb::kForWrite);
+	pNameList->close();
+	if (es == Acad::eKeyNotFound) {
+		acutPrintf(_T("\n自定义字典不存在"));
+		return;
+	}
+	else if (es != Acad::eOk) {
+		acutPrintf(_T("\n无法获取自定义字典，错误为: %d"), es);
+		return;
+	}
+
+	// 设置反应器在字典中的名称
+	AcString reactorName = _T("reactor_");
+	strConcat(chessId, reactorName);
+
+	// 获取反应器对象ID
+	AcDbObjectId reactId;
+	es = pReactDict->getAt(reactorName, reactId);
+	if (es != Acad::eOk) {
+		acutPrintf(_T("\n无法找到反应器对象，错误为: %d"), es);
+		pReactDict->close();
+		return;
+	}
+
+	// 打开反应器对象
+	CmyReactor* pReactor = nullptr;
+	es = acdbOpenObject(pReactor, reactId, AcDb::kForWrite);
+	if (es != Acad::eOk) {
+		acutPrintf(_T("\n无法打开反应器对象，错误为: %d"), es);
+		pReactDict->close();
+		return;
+	}
+
+	// 从ChessBoard对象上移除持久反应器
+	es = pChessBoard->removePersistentReactor(reactId);
+	if (es != Acad::eOk) {
+		acutPrintf(_T("\n从ChessBoard对象上移除持久反应器失败，错误为: %d"), es);
+	}
+
+	// 从自定义字典中删除反应器对象
+	es = pReactDict->remove(reactorName);
+	if (es != Acad::eOk) {
+		acutPrintf(_T("\n从自定义字典中删除反应器对象失败，错误为: %d"), es);
+	}
+
+	// 删除反应器对象
+	es = pReactor->erase();
+	if (es != Acad::eOk) {
+		acutPrintf(_T("\n删除反应器对象失败，错误为: %d"), es);
+	}
+
+	pReactor->close();
+	pReactDict->close();
+}
+
+
 
 void changeColor(CchessBoard* pChessBoard, int x, int y, int dx, int dy, int positiveStep,int negativeStep) {
 	// 向该维度的正方向遍历
@@ -323,6 +469,37 @@ void printToScreen(const AcString& textString, AcGePoint3d position, double heig
 	pBlockTableRecord->close();
 }
 
+// 判断一个点是否在矩形内
+bool isPointInPolygon(AcGePoint3d p, AcGePoint3d* vertices, int vertexCount) {
+	if (vertexCount != 4) {
+		return false;
+	}
+
+	// 定义向量
+	AcGeVector3d v1 = vertices[1] - vertices[0];
+	AcGeVector3d v2 = vertices[2] - vertices[1];
+	AcGeVector3d v3 = vertices[3] - vertices[2];
+	AcGeVector3d v4 = vertices[0] - vertices[3];
+
+	// 点到顶点的向量
+	AcGeVector3d vp1 = p - vertices[0];
+	AcGeVector3d vp2 = p - vertices[1];
+	AcGeVector3d vp3 = p - vertices[2];
+	AcGeVector3d vp4 = p - vertices[3];
+
+	// 计算叉积
+	double c1 = v1.crossProduct(vp1).z;
+	double c2 = v2.crossProduct(vp2).z;
+	double c3 = v3.crossProduct(vp3).z;
+	double c4 = v4.crossProduct(vp4).z;
+
+	// 判断点是否在矩形内部
+	if ((c1 >= 0 && c2 >= 0 && c3 >= 0 && c4 >= 0) || (c1 <= 0 && c2 <= 0 && c3 <= 0 && c4 <= 0))
+		return true;
+	else
+		return false;
+}
+
 
 void playGame() {
 	// 创建棋盘
@@ -343,6 +520,17 @@ void playGame() {
 	double height = chessBoard->getHeight();
 	double cellWidth = width / column;
 	double cellHeight = height / row;
+	AcGePoint3d chessBoardCenter = chessBoard->getCenter();
+	AcGePoint3d pt1 = chessBoardCenter + AcGeVector3d(-width / 2, -height / 2, 0); // Bottom-left corner
+	AcGePoint3d pt2 = chessBoardCenter + AcGeVector3d(width / 2, -height / 2, 0); // Bottom-right corner
+	AcGePoint3d pt3 = chessBoardCenter + AcGeVector3d(width / 2, height / 2, 0); // Top-right corner
+	AcGePoint3d pt4 = chessBoardCenter + AcGeVector3d(-width / 2, height / 2, 0); // Top-left corner
+	AcGePoint3d backgroundPoints[4] = {
+		pt1 + AcGeVector3d(-width / 20,-height / 20, 0),
+		pt2 + AcGeVector3d(width / 20,-height / 20, 0),
+		pt3 + AcGeVector3d(width / 20,height / 20, 0),
+		pt4 + AcGeVector3d(-width / 20,height / 20, 0)
+	};
 
 	// 确定棋子半径
 	double radius = min(cellWidth, cellHeight) / 2.5;
@@ -361,12 +549,50 @@ void playGame() {
 		AcDbEntity* chessEnt;
 		if (acdbOpenAcDbEntity(chessEnt, chessId, AcDb::kForWrite) != Acad::eOk) {
 			acutPrintf(_T("Failed to open entity with Object ID: %ld\n"), chessId.asOldId());
-			return;
+			break;
 		}
 		Cchess* chess = (Cchess*)chessEnt;
 
 		// 获取棋子中心点位置
 		AcGePoint3d chessCenter = chess->getCenter();
+
+		// 如果点击的点不在棋盘内，则撤销下棋
+		if (!isPointInPolygon(chessCenter, backgroundPoints, 4)) {
+			// 释放当前棋子实体
+			chess->erase();
+			chess->close();
+			--i;
+
+			// 禁止悔第一枚棋子
+			if (i == 0) {
+				acutPrintf(_T("第一枚棋子无法悔棋\n"));
+				continue;
+			}
+
+			// 获取上枚安放的棋子
+			AcDbObjectId chessToDeleteId = chessBoard->getCurrentChessId();
+			AcDbEntity* chessToDeleteEnt;
+			if (acdbOpenAcDbEntity(chessToDeleteEnt, chessToDeleteId, AcDb::kForWrite) != Acad::eOk) {
+				acutPrintf(_T("Failed to open entity with Object ID: %ld\n"), chessId.asOldId());
+				break;
+			}
+
+			// 删除对应的反应器
+			removeReactor(chessBoard, chessToDeleteId);
+
+			// 从块表将棋子删除
+			Cchess* chessToDelete = (Cchess*)chessToDeleteEnt;
+			chessToDelete->erase();
+			chessToDelete->close();
+
+			// 恢复棋盘状况
+			chessBoard->regretChess();
+
+			// 更新棋子颜色，继续循环
+			chessColor = chessColor % 2 + 1;
+			--i;
+			continue;
+		}
 
 		// 找到离棋子最近的棋盘位置
 		int x = 0, y = 0;

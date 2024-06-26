@@ -14,7 +14,7 @@
 
 导入 zrx 文件后，输入 playGame 指令创建棋盘，游戏开始。当任意一方有>=5 个棋子连在一起时，该方获胜。<br>
 支持悔棋，当点击悔棋按钮时撤销上一步操作。<br>
-主程序文件为 main.h，其余均为自定义实体和自定义对象。主函数为 main.h 中的 playGame(),在这个过程中先后完成了
+主程序文件为 main.h/cpp，它引用到的函数均在 utils.h/cpp 中定义，其余均为自定义实体和自定义对象。主函数为 main.h 中的 playGame(),在这个过程中先后完成了：
 
 ```
 1）创建棋盘 createChessBoard()
@@ -34,27 +34,32 @@
 
 *）任意时刻点击悔棋按钮，触发悔棋
     bool regret(int& i, CchessBoard* chessBoard, int& chessColor)
+*）悔棋功能中的删除反应器部分中，被注释的报错语句那里有问题，不过毕竟运行无误我就把报错注释了。
 
 ```
 
 预览图：<br>
-![alt text](./imgs/preview-1.png)<br>
-![alt text](./imgs/preview-2.png)
+<img src="./imgs/preview-1.png" alt="运行中" style="max-width:600px; height:auto;">
+<img src="./imgs/preview-2.png" alt="一方获胜" style="max-width:600px; height:auto;">
 
-### 3. 用到的特性
+### 3.自定义实体/对象
 
-##### 3.1. React 反应器
+自定义实体有 CchessBoard、Cchess、CchessJig、CchessBoardJig, 自定义对象为 CmyReactor。
+
+### 4. 用到的特性
+
+##### 4.1. React 反应器
 
 用于监听棋盘的变形和移动，以此校准棋子位置和大小。见 myReactor
 
-##### 3.2. Jig 和 DimData
+##### 4.2. Jig 和 DimData
 
 用于棋盘的初始创建和参数显示，以及棋子放下前的预绘制。见 chessBoardJig 和 chessJig
 
-##### 3.3. 部分 Undo
+##### 4.4. 部分 Undo
 
 实现于 ChessBoard 类中，在 setXXX()函数中实现，与 applyPartialUndo()相配合。只是好像还没有用到过
 
-##### 3.4. 夹点、捕捉点
+##### 4.4. 夹点、捕捉点
 
 夹点实现于 chessBoard 中，分别用于方便移动棋盘，捕捉点实现于 ChessBoard 中，用于棋子吸附。chess 中也有基础夹点的实现。

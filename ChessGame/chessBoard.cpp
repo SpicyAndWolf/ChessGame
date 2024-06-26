@@ -20,8 +20,8 @@ CchessBoard::CchessBoard() {
 	center = AcGePoint3d(0.0, 0.0, 0.0);
 	width = 100;
 	height = 100;
-	row = 15;
-	column = 15;
+	row = 14;
+	column = 14;
 
 	// 设置grids
 	std::vector<int> arr;
@@ -408,7 +408,28 @@ Adesk::Boolean CchessBoard::subWorldDraw(AcGiWorldDraw * mode) {
 	AcGePoint3d pt3 = center + AcGeVector3d(width / 2, height / 2, 0); // Top-right corner
 	AcGePoint3d pt4 = center + AcGeVector3d(-width / 2, height / 2, 0); // Top-left corner
 
-	// 用折线绘制棋盘边界
+	// 设置棋盘背景颜色
+	mode->subEntityTraits().setFillType(kAcGiFillAlways);
+	AcCmEntityColor backgroundColor;
+	backgroundColor.setRGB(181, 135, 86);
+	mode->subEntityTraits().setTrueColor(backgroundColor);
+
+	// 绘制棋盘背景
+	AcGePoint3d backgroundPoints[4] = {
+		pt1 + AcGeVector3d(-width / 20,-height / 20, 0),
+		pt2 + AcGeVector3d(width / 20,-height / 20, 0),
+		pt3 + AcGeVector3d(width / 20,height / 20, 0),
+		pt4 + AcGeVector3d(-width / 20,height / 20, 0)
+	};
+	mode->geometry().polygon(4, backgroundPoints);
+
+	// 设置棋盘边界颜色
+	mode->subEntityTraits().setFillType(kAcGiFillNever);
+	AcCmEntityColor borderColor;
+	borderColor.setRGB(0, 0, 0);
+	mode->subEntityTraits().setTrueColor(borderColor);
+
+	// 绘制棋盘边界
 	AcGePoint3d points[5] = { pt1, pt2, pt3, pt4, pt1 };
 	mode->geometry().polyline(5, points);
 
@@ -416,19 +437,29 @@ Adesk::Boolean CchessBoard::subWorldDraw(AcGiWorldDraw * mode) {
 	double cellWidth = width / column;
 	double cellHeight = height / row;
 
+	// 设置内部格子线条颜色
+	AcCmEntityColor lineColor;
+	lineColor.setRGB(0, 0, 0); // 黑色线条
+	mode->subEntityTraits().setTrueColor(lineColor);
+
 	// 绘制内部格子
-	for (int i = 0; i <= row; ++i) {
+	for (int i = 1; i < row; ++i) {
 		AcGePoint3d start = pt1 + AcGeVector3d(0, i * cellHeight, 0);
 		AcGePoint3d end = pt2 + AcGeVector3d(0, i * cellHeight, 0);
-		AcGePoint3d points_temp[2] = { start,end };
+		AcGePoint3d points_temp[2] = { start, end };
 		mode->geometry().polyline(2, points_temp);
 	}
 
-	for (int j = 0; j <= column; ++j) {
+	for (int j = 1; j < column; ++j) {
 		AcGePoint3d start = pt1 + AcGeVector3d(j * cellWidth, 0, 0);
 		AcGePoint3d end = pt4 + AcGeVector3d(j * cellWidth, 0, 0);
-		AcGePoint3d points_temp[2] = { start,end };
+		AcGePoint3d points_temp[2] = { start, end };
 		mode->geometry().polyline(2, points_temp);
+	}
+
+	// 中心点加粗
+	for (int i = 10; i < 30; i++) {
+		mode->geometry().circle(center, cellWidth / i, AcGeVector3d::kZAxis);
 	}
 
 	return (AcDbEntity::subWorldDraw(mode));

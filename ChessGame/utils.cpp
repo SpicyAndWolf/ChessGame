@@ -121,7 +121,7 @@ void createRegretButton(CchessBoard* pNewEntity, AcDbObjectId& regretButtonId) {
 	pBlockTableRecord->close();
 }
 
-AcDbObjectId createChessBoard(AcDbObjectId& regretButtonId) {
+AcDbObjectId createChessBoard() {
 	// 获取块表记录（模型空间）
 	AcDbBlockTableRecord *pBlockTableRecord;
 	getBlockTableRecord(pBlockTableRecord);

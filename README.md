@@ -31,10 +31,15 @@
     void changeColor(CchessBoard* pChessBoard, int, int, int, int, int, int);
 9）在画布上打印游戏结果
     void printToScreen(const AcString&, AcGePoint3d);
+
+*）任意时刻点击悔棋按钮，触发悔棋
+    bool regret(int& i, CchessBoard* chessBoard, int& chessColor)
+
 ```
 
 预览图：<br>
-![alt text](./imgs/preview.png)
+![alt text](./imgs/preview-1.png)<br>
+![alt text](./imgs/preview-2.png)
 
 ### 3. 用到的特性
 

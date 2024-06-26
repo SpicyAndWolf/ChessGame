@@ -20,7 +20,7 @@ enum chessStatus {
 
 
 void getBlockTableRecord(AcDbBlockTableRecord *&);
-AcDbObjectId createChessBoard(AcDbObjectId&);
+AcDbObjectId createChessBoard();
 AcDbObjectId createChess(double, int);
 void strConcat(AcDbObjectId chessId, AcString& reactorName);
 AcGePoint3d findClosePoint(AcGePoint3d, CchessBoard*, int&, int&); // 找到与当前点击的点离得最近的棋盘格

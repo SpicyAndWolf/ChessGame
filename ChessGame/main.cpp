@@ -3,8 +3,7 @@
 
 void playGame() {
 	// 创建棋盘
-	AcDbObjectId regretButtonId;
-	AcDbObjectId chessBoardId = createChessBoard(regretButtonId);
+	AcDbObjectId chessBoardId = createChessBoard();
 
 	// 通过chessBoardId打开这个棋盘
 	AcDbEntity* chessBoardEnt;
@@ -15,6 +14,7 @@ void playGame() {
 	CchessBoard* chessBoard = (CchessBoard*)chessBoardEnt;
 
 	// 创建悔棋按钮
+	AcDbObjectId regretButtonId;
 	createRegretButton(chessBoard, regretButtonId);
 
 	// 通过regretButtonId打开这个按钮
@@ -118,7 +118,8 @@ void playGame() {
 		if (isWin(chessBoard,chessColor, x, y)) {
 			// 设置胜利文字的位置、内容
 			AcGePoint3d textPoint = chessBoard->getCenter();
-			textPoint.y =textPoint.y+ height / 2 + 20;
+			textPoint.y =textPoint.y+ height / 2+height/20 + 20;
+			textPoint.x = textPoint.x - 70;
 			AcString message;
 			message.format(L"玩家 %d 获胜\n", chessColor);
 

@@ -68,13 +68,13 @@ void CchessBoard::setGrids(int x, int y, int color) {
 		return; 
 	}
 
+	// 保存当前状态,用于悔棋
+	if (stepCountA == stepCountB)
+		saveState();
+
 	// 修改数据值
 	++stepCountA;
 	grids[x][y] = color;
-
-	// 保存当前状态,用于悔棋
-	if (stepCountA != stepCountB)
-		saveState();
 }
 
 void CchessBoard::setChessIds(int x,int y, AcDbObjectId id) {
@@ -84,14 +84,14 @@ void CchessBoard::setChessIds(int x,int y, AcDbObjectId id) {
 		return;
 	}
 
+	// 保存当前状态,用于悔棋
+	if (stepCountA == stepCountB)
+		saveState();
+
 	// 修改数据值
 	chessIds[x][y] = id;
 	++stepCountB;
 	currentChessId = id;
-
-	// 保存当前状态,用于悔棋
-	if (stepCountA != stepCountB)
-		saveState();
 }
 
 void CchessBoard::saveState() {
@@ -112,15 +112,15 @@ void CchessBoard::regretChess() {
 		return;
 	}
 
-	// 移除栈顶元素
-	history.pop();
-	stepCountA = stepCountB;
-
 	// 恢复到上一个状态
 	ChessBoardState state = history.top();
 	grids = state.grids;
 	chessIds = state.chessIds;
 	currentChessId = state.chessId;
+
+	// 移除栈顶元素
+	history.pop();
+	stepCountA = stepCountB;
 }
 
 

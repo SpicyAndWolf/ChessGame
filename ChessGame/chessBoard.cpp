@@ -61,6 +61,9 @@ void CchessBoard::setWidth(double w) {
 void CchessBoard::setHeight(double h) {
 	height = h;
 }
+void CchessBoard::setStatus(int s) {
+	status = s;
+}
 void CchessBoard::setGrids(int x, int y, int color) {
 	// 边界检查
 	if (x < 0 || x > row || y < 0 || y > column) {
@@ -167,6 +170,7 @@ Acad::ErrorStatus CchessBoard::dwgOutFields(AcDbDwgFiler *pFiler) const {
 	pFiler->writePoint3d(center);
 	pFiler->writeDouble(height);
 	pFiler->writeDouble(width);
+	pFiler->writeInt32(status);
 	pFiler->writeInt32(row);
 	pFiler->writeInt32(column);
 
@@ -202,6 +206,7 @@ Acad::ErrorStatus CchessBoard::dwgInFields(AcDbDwgFiler * pFiler) {
 	pFiler->readPoint3d(&center);
 	pFiler->readDouble(&height);
 	pFiler->readDouble(&width);
+	pFiler->readInt32(&status);
 
 	// 读取row和column
 	int r = 0, c = 0;
@@ -344,7 +349,10 @@ Adesk::Boolean CchessBoard::subWorldDraw(AcGiWorldDraw * mode) {
 	AcGePoint3d pt4 = center + AcGeVector3d(-width / 2, height / 2, 0); // Top-left corner
 
 	// 设置棋盘背景颜色
-	mode->subEntityTraits().setFillType(kAcGiFillAlways);
+	if(status)
+		mode->subEntityTraits().setFillType(kAcGiFillAlways); //根据棋盘是否活动设置其背景颜色
+	else
+		mode->subEntityTraits().setFillType(kAcGiFillNever);
 	AcCmEntityColor backgroundColor;
 	backgroundColor.setRGB(181, 135, 86);
 	mode->subEntityTraits().setTrueColor(backgroundColor);
@@ -361,7 +369,7 @@ Adesk::Boolean CchessBoard::subWorldDraw(AcGiWorldDraw * mode) {
 	// 设置棋盘边界颜色
 	mode->subEntityTraits().setFillType(kAcGiFillNever);
 	AcCmEntityColor borderColor;
-	borderColor.setRGB(0, 0, 0);
+	borderColor.setRGB(255, 255, 255);
 	mode->subEntityTraits().setTrueColor(borderColor);
 
 	// 绘制棋盘边界
@@ -374,7 +382,7 @@ Adesk::Boolean CchessBoard::subWorldDraw(AcGiWorldDraw * mode) {
 
 	// 设置内部格子线条颜色
 	AcCmEntityColor lineColor;
-	lineColor.setRGB(0, 0, 0); // 黑色线条
+	lineColor.setRGB(255,255, 255); // 黑色线条
 	mode->subEntityTraits().setTrueColor(lineColor);
 
 	// 绘制内部格子
@@ -392,9 +400,18 @@ Adesk::Boolean CchessBoard::subWorldDraw(AcGiWorldDraw * mode) {
 		mode->geometry().polyline(2, points_temp);
 	}
 
+	// 设置各个顶点颜色
+	AcCmEntityColor pointColor;
+	pointColor.setRGB(0, 0, 0);
+	mode->subEntityTraits().setTrueColor(pointColor);
+
 	// 中心点加粗
 	for (int i = 10; i < 30; i++) {
-		mode->geometry().circle(center, cellWidth / i, AcGeVector3d::kZAxis);
+		mode->geometry().circle(center, min(cellWidth,cellHeight)/i, AcGeVector3d::kZAxis);
+		mode->geometry().circle(pt1, min(cellWidth, cellHeight) / i, AcGeVector3d::kZAxis);
+		mode->geometry().circle(pt2, min(cellWidth, cellHeight) / i, AcGeVector3d::kZAxis);
+		mode->geometry().circle(pt3, min(cellWidth, cellHeight) / i, AcGeVector3d::kZAxis);
+		mode->geometry().circle(pt4, min(cellWidth, cellHeight) / i, AcGeVector3d::kZAxis);
 	}
 
 	return (AcDbEntity::subWorldDraw(mode));

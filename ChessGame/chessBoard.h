@@ -24,6 +24,7 @@ public:
 	void setHeight(double);
 	void setGrids(int, int, int);
 	void setChessIds(int,int,AcDbObjectId);
+	void setStatus(int);
 	ZcGePoint3d getCenter();
 	double getWidth();
 	double getHeight();
@@ -47,6 +48,7 @@ protected:
 	int stepCountA = 0; // 这两个变量服务于悔棋功能，如果两者相等，则说明可以把当前状态压栈
 	int stepCountB = 0;
 	AcDbObjectId currentChessId; // 记录刚放下的棋子Id，也用于悔棋
+	int status=active; // 记录棋盘当前状态，如果为active则表明正在下棋，否则是已经下完了
 	enum gridStatus {
 		empty = 0,
 		white = 1,
@@ -58,6 +60,10 @@ protected:
 		kCenter=103,
 		kWidth=104,
 		kHeight=105,
+	};
+	enum chessBoardStatus {
+		finished = 0,
+		active = 1
 	};
 
 public:

@@ -132,6 +132,9 @@ void playGame() {
 	}
 
 	// 关闭棋盘
+	chessBoard->setStatus(0); //将棋盘设为不活动状态
+	chessBoard->recordGraphicsModified(1);
 	chessBoard->close();
 	regretButton->close();
+	acedRedraw(NULL, 1);
 }

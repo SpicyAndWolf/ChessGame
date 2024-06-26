@@ -31,6 +31,7 @@ bool isPointInPolygon(AcGePoint3d p, AcGePoint3d* vertices, int vertexCount);
 bool isPointInRectangle(const AcGePoint3d& clickPoint, const AcDbPolyline* pRectangle);
 void printToScreen(const AcString&, AcGePoint3d,double); // 在画布上打印文字
 void removeReactor(CchessBoard* pChessBoard, AcDbObjectId chessId);
-void createRegretButton(CchessBoard* pNewEntity, AcDbBlockTableRecord* pBlockTableRecord, AcDbObjectId& regretButtonId);
+void createRegretButton(CchessBoard* pNewEntity, AcDbObjectId& regretButtonId);
+bool regret(int& i, CchessBoard* chessBoard, int& chessColor);
 
 #endif

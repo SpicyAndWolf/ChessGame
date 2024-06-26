@@ -49,9 +49,11 @@ bool isPointInRectangle(const AcGePoint3d& clickPoint, const AcDbPolyline* pRect
 		return false;
 }
 
+void createRegretButton(CchessBoard* pNewEntity, AcDbObjectId& regretButtonId) {
+	// 获取块表记录（模型空间）
+	AcDbBlockTableRecord *pBlockTableRecord;
+	getBlockTableRecord(pBlockTableRecord);
 
-
-void createRegretButton(CchessBoard* pNewEntity, AcDbBlockTableRecord* pBlockTableRecord, AcDbObjectId& regretButtonId) {
 	// 计算矩形的位置
 	AcGePoint3d chessBoardCenter = pNewEntity->getCenter();
 	double chessBoardWidth = pNewEntity->getWidth();
@@ -79,6 +81,44 @@ void createRegretButton(CchessBoard* pNewEntity, AcDbBlockTableRecord* pBlockTab
 
 	// 关闭矩形
 	pRectangle->close();
+
+	// 创建文字对象
+	AcDbText *pText = new AcDbText();
+	pText->setDatabaseDefaults();
+
+	// 设置文字内容和高度
+	pText->setTextString(_T("悔棋"));
+	pText->setHeight(rectHeight / 3.0); // 设置文字高度，这里设为矩形高度的一半
+
+	// 计算文字的位置，使其居中于矩形
+	AcGePoint3d textPosition(rectLeftX + rectWidth / 2.0, rectBottomY + rectHeight / 2.0, 0);
+	pText->setPosition(textPosition);
+
+	// 获取文字的边界框
+	AcDbExtents extents;
+	pText->getGeomExtents(extents);
+	AcGePoint3d extMin = extents.minPoint();
+	AcGePoint3d extMax = extents.maxPoint();
+	double textWidth = extMax.x - extMin.x;
+	double textHeight = extMax.y - extMin.y;
+
+	// 调整文字位置使其居中
+	AcGePoint3d adjustedTextPosition(
+		textPosition.x - textWidth / 2.0,
+		textPosition.y - textHeight / 2.0,
+		textPosition.z
+	);
+	pText->setPosition(adjustedTextPosition);
+
+	// 将文字放入块表
+	AcDbObjectId textId;
+	pBlockTableRecord->appendAcDbEntity(textId, pText);
+
+	// 关闭文字
+	pText->close();
+
+	// 关闭块表记录
+	pBlockTableRecord->close();
 }
 
 AcDbObjectId createChessBoard(AcDbObjectId& regretButtonId) {
@@ -96,9 +136,6 @@ AcDbObjectId createChessBoard(AcDbObjectId& regretButtonId) {
 		AcDbObjectId id;
 		pBlockTableRecord->appendAcDbEntity(id, pNewEntity);
 
-		// 创建悔棋按钮
-		createRegretButton(pNewEntity, pBlockTableRecord, regretButtonId);
-
 		// 关闭对象
 		pNewEntity->close();
 		pBlockTableRecord->close();
@@ -106,6 +143,7 @@ AcDbObjectId createChessBoard(AcDbObjectId& regretButtonId) {
 	}
 	else {
 		delete pNewEntity;
+		pBlockTableRecord->close();
 		return nullptr;
 	}
 }
@@ -490,3 +528,34 @@ bool isPointInPolygon(AcGePoint3d p, AcGePoint3d* vertices, int vertexCount) {
 		return false;
 }
 
+bool regret(int& i, CchessBoard* chessBoard, int& chessColor) {
+	// 禁止悔第一枚棋子
+	if (i <= 0) {
+		acutPrintf(_T("第一枚棋子无法悔棋\n"));
+		return 1;
+	}
+
+	// 获取上枚安放的棋子
+	AcDbObjectId chessToDeleteId = chessBoard->getCurrentChessId();
+	AcDbEntity* chessToDeleteEnt;
+	if (acdbOpenAcDbEntity(chessToDeleteEnt, chessToDeleteId, AcDb::kForWrite) != Acad::eOk) {
+		acutPrintf(_T("Failed to open entity with Object ID: %ld\n"), chessToDeleteId.asOldId());
+		return 0;
+	}
+
+	// 删除对应的反应器
+	removeReactor(chessBoard, chessToDeleteId);
+
+	// 从块表将棋子删除
+	Cchess* chessToDelete = (Cchess*)chessToDeleteEnt;
+	chessToDelete->erase();
+	chessToDelete->close();
+
+	// 恢复棋盘状况
+	chessBoard->regretChess();
+
+	// 更新棋子颜色，继续循环
+	chessColor = chessColor % 2 + 1;
+	--i;
+	return 1;
+}

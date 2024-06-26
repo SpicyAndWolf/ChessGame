@@ -14,6 +14,9 @@ void playGame() {
 	}
 	CchessBoard* chessBoard = (CchessBoard*)chessBoardEnt;
 
+	// 创建悔棋按钮
+	createRegretButton(chessBoard, regretButtonId);
+
 	// 通过regretButtonId打开这个按钮
 	AcDbEntity* regretButtonEnt;
 	if (acdbOpenAcDbEntity(regretButtonEnt, regretButtonId, AcDb::kForWrite) != Acad::eOk) {
@@ -77,35 +80,14 @@ void playGame() {
 				continue;
 			}
 
-			// 禁止悔第一枚棋子
-			if (i <= 0) {
-				acutPrintf(_T("第一枚棋子无法悔棋\n"));
+			// 悔棋并捕捉错误
+			if (regret(i, chessBoard, chessColor)) {
 				continue;
 			}
-
-			// 获取上枚安放的棋子
-			AcDbObjectId chessToDeleteId = chessBoard->getCurrentChessId();
-			AcDbEntity* chessToDeleteEnt;
-			if (acdbOpenAcDbEntity(chessToDeleteEnt, chessToDeleteId, AcDb::kForWrite) != Acad::eOk) {
-				acutPrintf(_T("Failed to open entity with Object ID: %ld\n"), chessId.asOldId());
+			else {
 				break;
 			}
 
-			// 删除对应的反应器
-			removeReactor(chessBoard, chessToDeleteId);
-
-			// 从块表将棋子删除
-			Cchess* chessToDelete = (Cchess*)chessToDeleteEnt;
-			chessToDelete->erase();
-			chessToDelete->close();
-
-			// 恢复棋盘状况
-			chessBoard->regretChess();
-
-			// 更新棋子颜色，继续循环
-			chessColor = chessColor % 2 + 1;
-			--i;
-			continue;
 		}
 
 		// 下棋
